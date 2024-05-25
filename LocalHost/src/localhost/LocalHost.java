@@ -9,6 +9,7 @@ package localhost;
  * @author DELL
  */
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -20,9 +21,9 @@ public class LocalHost {
         BufferedReader br = null;
         BufferedWriter bw = null;
         Socket  soc = null;
-        System.err.println("Server is running n port: "+port);
-        try{
-            ss = new ServerSocket(port);
+        System.err.println("Server is running in port: "+port);
+        try(FileReader reader = new FileReader("server.txt")){
+            ss = new ServerSocket(port,0,InetAddress.getByName("0.0.0.0"));
             while(true){
                 soc = ss.accept();
                 System.err.println("Client connected");
@@ -38,14 +39,13 @@ public class LocalHost {
                 OutputStream os = soc.getOutputStream();
                 try{
                     os.write("HTTP/1.1 200 OK\r\n".getBytes());
+                    os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
+                    //UTF bhane ASCII jastai UTF-32
                     os.write("\r\n".getBytes());
-                    os.write("<b>Welcome to server page<b>".getBytes());
-                    os.write("<p>This is served from the local server.<p>".getBytes());
-                    os.write("\r\n".getBytes());
-//                    int character;
-//                    while((character = reader.read()) != -1){
-//                        os.write(character);
-//                    }FileReader reader = new FileReader("server.html")
+                    int character;
+                    while((character = reader.read()) != -1){
+                        os.write(character);
+                    }
                     os.write("\r\n".getBytes());
                     os.flush();
                 }catch (Exception e) {
@@ -59,6 +59,9 @@ public class LocalHost {
         }catch (Exception e) {
             e.printStackTrace();
         }
+        
+        //multi threading here refresh garda pani
+        //
     }
     
 }
