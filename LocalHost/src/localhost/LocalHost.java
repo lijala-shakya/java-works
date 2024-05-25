@@ -59,11 +59,7 @@ public class LocalHost {
         }catch (Exception e) {
             e.printStackTrace();
         }
-        
-        //multi threading here refresh garda pani
-        //
-    }
-    
+    }  
 }
 //references: youtube:-https://www.youtube.com/watch?v=lCNUsi4Qfuw
 //github:- https://github.com/malinashakya/Java/blob/main/src/javacodes/localhost/SimpleHttpServer.java
