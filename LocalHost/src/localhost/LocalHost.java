@@ -15,11 +15,10 @@ import java.net.Socket;
 
 public class LocalHost {
 
-    public static void main(String[] args) throws IOexception{
+    public static void main(String[] args) throws IOException{
         int port = 3071;
         ServerSocket ss = null;
         BufferedReader br = null;
-        BufferedWriter bw = null;
         Socket  soc = null;
         System.err.println("Server is running in port: "+port);
         try(FileReader reader = new FileReader("server.txt")){
