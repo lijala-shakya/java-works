@@ -5,6 +5,7 @@
 </head>
 <body>
     <h1>Hello, World!</h1>
-    <p> </p>
+    <p>This is served from the local server.</p>
+
 </body>
 </html>
