@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome To Local Server</title>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <p>This is served from the local server.</p>
+
+</body>
+</html>
