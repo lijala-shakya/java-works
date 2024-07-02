@@ -25,7 +25,7 @@ public class MultiThreadLocalHostServer {
             ss = new ServerSocket(port,0,InetAddress.getByName("0.0.0.0"));
             while(true){
                 Socket soc = ss.accept();
-                System.err.println("Client connected");
+                System.err.println("Client connected" + soc.getInetAddress());
                 ClientHandler clientHandler = new ClientHandler(soc);
                 Thread thread = new Thread(clientHandler);
                 thread.start();
@@ -48,6 +48,7 @@ class ClientHandler implements Runnable{
         try{
             isr = new InputStreamReader(soc.getInputStream());
             br = new BufferedReader(isr);
+            os = soc.getOutputStream();
            
         }catch (Exception e) {
             e.printStackTrace();
@@ -59,10 +60,10 @@ class ClientHandler implements Runnable{
         try(FileReader reader = new FileReader("server.txt")){
             
             while(true){
-                 String str;
-                 while((str = br.readLine()) != null){
-                    System.out.println(str);
-                    if(str.isEmpty()){
+                 String requestLine;
+                 while((requestLine = br.readLine()) != null){
+                    System.out.println(requestLine);
+                    if(requestLine.isEmpty()){
                         break;
                     }
                 }
@@ -95,3 +96,9 @@ class ClientHandler implements Runnable{
     }
 } 
 //reference class localhost.java and class Server.java from project ServerMultipleClient
+
+//assignment difference between buffered reader and stream reader input buffer reader and wwriter
+//change port name of 127.0.0.1 from local host to other name
+//ipconfig /all  ipconfig
+//changing host file
+//header read garera parse garne
