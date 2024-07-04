@@ -1,7 +1,4 @@
-
-
-
-/*
+/**
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
@@ -10,13 +7,16 @@
  *
  * @author DELL
  */
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Base64;
+
 public class HTTPServerAuthentication {
-   
-   public static void main(String[] args) throws IOException {
+
+    public static void main(String[] args) throws IOException {
         ServerSocket ss = null;
         int port = 3070;
         System.err.println("Server is running on port: " + port);
@@ -40,9 +40,10 @@ public class HTTPServerAuthentication {
 }
 
 class ClientHandler implements Runnable {
-    // Hardcoded user credentials
     private static final String USERNAME = "user";
     private static final String PASSWORD = "password";
+    private static final String LOGIN_PAGE = "login.html";
+    private static final String SIGNIN_PAGE = "signin.html";
 
     private BufferedReader br;
     private OutputStream os;
@@ -80,22 +81,25 @@ class ClientHandler implements Runnable {
                         }
                     }
                 }
+                if (str.startsWith("Authorization: Basic ")) {
+                    String base64Credentials = str.split(" ")[2];
+                    String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+                    String[] userPass = credentials.split(":");
+                    authenticated = authenticate(userPass[0], userPass[1]);
+                }
                 if (str.isEmpty()) {
                     break;
                 }
             }
 
-            
             if (requestedFile.equals("login")) {
-                handleLogin();
+                serveFile("", LOGIN_PAGE);
             } else if (requestedFile.equals("signin")) {
-                handleSignIn();
+                serveFile("", SIGNIN_PAGE);
             } else {
                 if (!authenticated) {
-                    
                     sendLoginPage();
                 } else {
-                    
                     if (host != null) {
                         String folder = "";
                         if (host.startsWith("127.0.0.1")) {
@@ -124,47 +128,15 @@ class ClientHandler implements Runnable {
         }
     }
 
-    private void handleLogin() throws IOException {
-        String loginForm = "<html><body>" +
-                "<h1>Login</h1>" +
-                "<form method='post' action='/login'>" +
-                "Username: <input type='text' name='username'><br>" +
-                "Password: <input type='password' name='password'><br>" +
-                "<input type='submit' value='Login'>" +
-                "</form>" +
-                "</body></html>";
-        os.write("HTTP/1.1 200 OK\r\n".getBytes());
-        os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
-        os.write("\r\n".getBytes());
-        os.write(loginForm.getBytes());
-        os.flush();
-    }
-
-    private void handleSignIn() throws IOException {
-        String signInForm = "<html><body>" +
-                "<h1>Sign In</h1>" +
-                "<form method='post' action='/signin'>" +
-                "Username: <input type='text' name='username'><br>" +
-                "Password: <input type='password' name='password'><br>" +
-                "<input type='submit' value='Sign In'>" +
-                "</form>" +
-                "</body></html>";
-        os.write("HTTP/1.1 200 OK\r\n".getBytes());
-        os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
-        os.write("\r\n".getBytes());
-        os.write(signInForm.getBytes());
-        os.flush();
-    }
-
     private void sendLoginPage() throws IOException {
-        // Redirect to login page if not authenticated
-        os.write("HTTP/1.1 302 Found\r\n".getBytes());
-        os.write(("Location: /login\r\n").getBytes());
+        os.write("HTTP/1.1 401 Unauthorized\r\n".getBytes());
+        os.write("WWW-Authenticate: Basic realm=\"Access to the site\"\r\n".getBytes());
+        os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
         os.write("\r\n".getBytes());
+        os.write("<html><body><h1>401 Unauthorized</h1></body></html>".getBytes());
         os.flush();
     }
 
-    
     private boolean authenticate(String username, String password) {
         return username.equals(USERNAME) && password.equals(PASSWORD);
     }
