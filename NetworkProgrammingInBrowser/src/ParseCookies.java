@@ -45,7 +45,6 @@ class ClientHandler implements Runnable {
     private BufferedReader br;
     private OutputStream os;
     private Socket soc;
-    private String savedColor;
 
     public ClientHandler(Socket soc) {
         this.soc = soc;
@@ -65,7 +64,7 @@ class ClientHandler implements Runnable {
             String requestedFile = "index.html";
             String colorValue = null;
             String value = null;
-            
+            String cookieValue = null;
 
             while ((str = br.readLine()) != null) {
                 System.out.println(str);
@@ -77,25 +76,31 @@ class ClientHandler implements Runnable {
                     if (parts.length > 1) {
                         requestedFile = parts[1].substring(1);
                         String question = "";
-                        
-                        if(requestedFile.contains("?")){
+
+                        if (requestedFile.contains("?")) {
                             String[] parse = requestedFile.split("\\?");
-                            requestedFile = parse[0];//color
-                            question = parse[1];//Color=blue
+                            requestedFile = parse[0]; // color
+                            question = parse[1]; // Color=blue
                         }
                         if (requestedFile.isEmpty()) {
                             requestedFile = "index.html";
                         }
-                        if(question.isEmpty()){
+                        if (!question.isEmpty()) {
                             String[] keyValue = question.split("=");
-                            if(keyValue.length == 2){
+                            if (keyValue.length == 2) {
                                 String key = keyValue[0];
-                                value = keyValue[1]; 
+                                value = keyValue[1];
                             }
                         }
-                        
                     }
-                    
+                }
+                if (str.startsWith("Cookie:")) {
+                    String[] cookies = str.split(";");
+                    for (String cookie : cookies) {
+                        if (cookie.trim().startsWith("SelectedColor=")) {
+                            cookieValue = cookie.split("=")[1];
+                        }
+                    }
                 }
                 if (str.isEmpty()) {
                     break;
@@ -105,8 +110,8 @@ class ClientHandler implements Runnable {
             if (requestedFile.equals("login")) {
                 serveFile("", LOGIN_PAGE);
             } else {
-                serveColorPage(value);
-            } 
+                serveColorPage(value, cookieValue);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -121,7 +126,6 @@ class ClientHandler implements Runnable {
             }
         }
     }
-    
 
     private void serveFile(String folder, String fileName) {
         try (FileReader fileReader = new FileReader(folder + "/" + fileName)) {
@@ -142,23 +146,27 @@ class ClientHandler implements Runnable {
         }
     }
 
-    private void serveColorPage(String userSelectedColor) throws IOException {
+    private void serveColorPage(String userSelectedColor, String savedColor) throws IOException {
         os.write("HTTP/1.1 200 OK\r\n".getBytes());
         os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
-        os.write("\r\n".getBytes());
-        
-        if(userSelectedColor != null && !userSelectedColor.isEmpty()){
-            String cookie = "Set-Cookie: SelectedColor =" + userSelectedColor + ";Path=/\r\n";
+
+        if (userSelectedColor != null && !userSelectedColor.isEmpty()) {
+            String cookie = "Set-Cookie: SelectedColor=" + userSelectedColor + "; Path=/\r\n";
             os.write(cookie.getBytes());
         }
+
+        os.write("\r\n".getBytes()); // End of headers
+
+        String backgroundColor = (userSelectedColor != null && !userSelectedColor.isEmpty()) ? userSelectedColor
+                : (savedColor != null ? savedColor : "white");
+
         // HTML form for color selection
-        String response = "<html><body>";
+        String response = "<html><body style='background-color:" + backgroundColor + ";'>";
         response += "<form>";
-        response += "<h2><td>Select Your Favorite Color</td></h2>";
-        response += "<h2><td>Color</td></h2>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"red\">red </input>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"blue\">blue</input>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"green\">green</input></td>";
+        response += "<h2>Select Your Favorite Color</h2>";
+        response += "<input type=\"radio\" name=\"Color\" value=\"red\">Red</input>";
+        response += "<input type=\"radio\" name=\"Color\" value=\"blue\">Blue</input>";
+        response += "<input type=\"radio\" name=\"Color\" value=\"green\">Green</input>";
         response += "<input type=\"submit\" value=\"Submit\">";
         response += "</form>";
         response += "</body></html>";
@@ -166,7 +174,6 @@ class ClientHandler implements Runnable {
         os.write(response.getBytes());
         os.flush();
     }
-   
 
     private void error() {
         try {
