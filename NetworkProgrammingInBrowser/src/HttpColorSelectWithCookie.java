@@ -1,5 +1,3 @@
-
-
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
@@ -9,13 +7,14 @@
  *
  * @author DELL
  */
+
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class HttpColorSelectWithCookie {
-
+public class HTTPColorSelectWithCookie {
     public static void main(String[] args) throws IOException {
         ServerSocket ss = null;
         int port = 3075;
@@ -40,13 +39,10 @@ public class HttpColorSelectWithCookie {
 }
 
 class ClientHandler implements Runnable {
-    private static final String LOGIN_PAGE = "login.html";
-    private static final String COLOR_PAGE = "color.html";
-
+    private static final String LOGIN_PAGE = "index.html";
     private BufferedReader br;
     private OutputStream os;
     private Socket soc;
-    private String savedColor;
 
     public ClientHandler(Socket soc) {
         this.soc = soc;
@@ -62,44 +58,52 @@ class ClientHandler implements Runnable {
     public void run() {
         try {
             String str;
-            String host = null;
             String requestedFile = "index.html";
-            String cookieHeader = null;
+            String colorValue = null;
+            String value = null;
+            String cookieValue = null;
 
             while ((str = br.readLine()) != null) {
                 System.out.println(str);
-                if (str.startsWith("Host:")) {
-                    host = str.split(" ")[1];
-                }
                 if (str.startsWith("GET")) {
                     String[] parts = str.split(" ");
                     if (parts.length > 1) {
                         requestedFile = parts[1].substring(1);
+                        String question = "";
+
+                        if (requestedFile.contains("?")) {
+                            String[] parse = requestedFile.split("\\?");
+                            requestedFile = parse[0];
+                            question = parse[1];
+                        }
                         if (requestedFile.isEmpty()) {
                             requestedFile = "index.html";
+                        }
+                        if (!question.isEmpty()) {
+                            String[] keyValue = question.split("=");
+                            if (keyValue.length == 2) {
+                                value = keyValue[1];
+                            }
                         }
                     }
                 }
                 if (str.startsWith("Cookie:")) {
-                    cookieHeader = str;
+                    String[] cookies = str.split(";");
+                    for (String cookie : cookies) {
+                        if (cookie.trim().startsWith("SelectedColor=")) {
+                            cookieValue = cookie.split("=")[1];
+                        }
+                    }
                 }
                 if (str.isEmpty()) {
                     break;
                 }
             }
 
-            parseCookies(cookieHeader);
-
-            if (requestedFile.equals("login")) {
-                serveFile("", LOGIN_PAGE);
-            } else if (requestedFile.equals("color")) {
-                serveColorPage();
+            if (requestedFile.equals("index.html")) {
+                serveColorPage(value, cookieValue);
             } else {
-                if (savedColor == null) {
-                    serveColorPage();
-                } else {
-                    serveSavedColorPage(savedColor);
-                }
+                serveFile("", requestedFile);
             }
 
         } catch (IOException e) {
@@ -112,19 +116,6 @@ class ClientHandler implements Runnable {
                 System.err.println("Client connection closed!");
             } catch (IOException e) {
                 e.printStackTrace();
-            }
-        }
-    }
-
-    private void parseCookies(String cookieHeader) {
-        if (cookieHeader != null) {
-            String[] cookiePairs = cookieHeader.substring("Cookie: ".length()).split("; ");
-            for (String cookiePair : cookiePairs) {
-                String[] parts = cookiePair.split("=");
-                if (parts.length == 2 && parts[0].trim().equals("color")) {
-                    savedColor = parts[1].trim();
-                    break;
-                }
             }
         }
     }
@@ -148,43 +139,38 @@ class ClientHandler implements Runnable {
         }
     }
 
-    private void serveColorPage() throws IOException {
-        os.write("HTTP/1.1 200 OK\r\n".getBytes());
-        os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
-        os.write("\r\n".getBytes());
+    private void serveColorPage(String userSelectedColor, String savedColor) throws IOException {
+    os.write("HTTP/1.1 200 OK\r\n".getBytes());
+    os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
 
-        // HTML form for color selection
-        String response = "<html><body>";
-        response += "<form>";
-        response += "<h2><td>Select Your Favorite Color</td></h2>";
-        response += "<h2><td>Color</td></h2>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"red\">red </input>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"blue\">blue</input>";
-        response += "<td><input type=\"radio\" name=\"Color\" value=\"green\">green</input></td>";
-        response += "<input type=\"submit\" value=\"Submit\">";
-        response += "</form>";
-        response += "</body></html>";
-
-        os.write(response.getBytes());
-        os.flush();
+    if (userSelectedColor != null && !userSelectedColor.isEmpty()) {
+        String cookie = "Set-Cookie: SelectedColor=" + userSelectedColor + "; Path=/\r\n";
+        os.write(cookie.getBytes());
+        System.out.println("Set cookie for selected color: " + userSelectedColor);
     }
 
-    private void serveSavedColorPage(String savedColor) throws IOException {
-        os.write("HTTP/1.1 200 OK\r\n".getBytes());
-        os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
-        os.write(("Set-Cookie: color=" + savedColor + "\r\n").getBytes());
-        os.write("\r\n".getBytes());
+    os.write("\r\n".getBytes()); // End of headers
 
-        // HTML page showing the saved color
-        String response = "<html><body>";
-        response += "<h2>Your Favorite Color:</h2>";
-        response += "<p style=\"color:" + savedColor + ";\">" + savedColor + "</p>";
-        response += "</body></html>";
+    String backgroundColor = (userSelectedColor != null && !userSelectedColor.isEmpty()) ? userSelectedColor
+            : (savedColor != null ? savedColor : "white");
 
-        os.write(response.getBytes());
-        os.flush();
-    }
-    
+    System.out.println("Serving page with background color: " + backgroundColor);
+
+    // HTML form for color selection
+    String response = "<html><body style='background-color:" + backgroundColor + ";'>";
+    response += "<form action=\"index.html\" method=\"GET\">";
+    response += "<h2>Select Your Favorite Color</h2>";
+    response += "<input type=\"radio\" name=\"Color\" value=\"red\">Red</input>";
+    response += "<input type=\"radio\" name=\"Color\" value=\"blue\">Blue</input>";
+    response += "<input type=\"radio\" name=\"Color\" value=\"green\">Green</input>";
+    response += "<input type=\"submit\" value=\"Submit\">";
+    response += "</form>";
+    response += "</body></html>";
+
+    os.write(response.getBytes());
+    os.flush();
+}
+
 
     private void error() {
         try {
