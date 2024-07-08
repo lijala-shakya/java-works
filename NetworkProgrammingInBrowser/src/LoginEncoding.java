@@ -19,7 +19,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
 public class LoginEncoding {
 
@@ -94,7 +93,7 @@ public class LoginEncoding {
                         String[] userPass = credentials.split(":");
                         authenticated = authenticate(userPass[0], userPass[1]);
                         if (authenticated) {
-                            // Create session and set cookie
+                            
                             String loginTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
                             sessionId = createSession(userPass[0], loginTime);
                             sendAuthenticatedResponse(sessionId);
@@ -171,7 +170,7 @@ public class LoginEncoding {
         }
 
         private String createSession(String username, String loginTime) {
-            // Generate a random alphanumeric session ID of length 10
+            
             String characters = "abcdefghijklmnopqrstuvwxyz0123456789";
             StringBuilder sessionIdBuilder = new StringBuilder();
             Random random = new Random();
