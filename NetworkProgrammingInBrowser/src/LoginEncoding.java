@@ -23,6 +23,8 @@ import java.util.Random;
 public class LoginEncoding {
 
     private static final Map<String, String> sessions = new HashMap<>();
+    private static final String USERNAME = "user";
+    private static final String PASSWORD = "password";
 
     public static void main(String[] args) throws IOException {
         ServerSocket ss = null;
@@ -47,9 +49,6 @@ public class LoginEncoding {
     }
 
     static class ClientHandler implements Runnable {
-        private static final String USERNAME = "user";
-        private static final String PASSWORD = "password";
-
         private BufferedReader br;
         private OutputStream os;
         private Socket soc;
@@ -88,27 +87,35 @@ public class LoginEncoding {
                         }
                     }
                     if (str.startsWith("Authorization: Basic ")) {
-                        String base64Credentials = str.split(" ")[2];
+                        String base64Credentials = str.substring("Authorization: Basic ".length()).trim();
                         String credentials = new String(Base64.getDecoder().decode(base64Credentials));
                         String[] userPass = credentials.split(":");
                         authenticated = authenticate(userPass[0], userPass[1]);
                         if (authenticated) {
-                            
                             String loginTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
                             sessionId = createSession(userPass[0], loginTime);
-                            sendAuthenticatedResponse(sessionId);
+                            sendAuthenticatedResponse(sessionId, loginTime);
+                        } else {
+                            sendLoginPage();
+                            return;
                         }
                     }
                     if (str.startsWith("Cookie:")) {
-                        String cookieHeader = str.substring(8);
+                        String cookieHeader = str.substring("Cookie: ".length());
                         String[] cookies = cookieHeader.split(";");
                         for (String cookie : cookies) {
                             String[] cookiePair = cookie.split("=");
-                            if (cookiePair[0].trim().equals("sessionId")) {
-                                sessionId = cookiePair[1];
+                            if (cookiePair.length == 2 && cookiePair[0].trim().equals("sessionId")) {
+                                sessionId = cookiePair[1].trim();
                                 authenticated = validateSession(sessionId);
                                 if (authenticated) {
-                                    sendAuthenticatedResponse(sessionId);
+                                    String sessionData = sessions.get(sessionId);
+                                    String[] dataParts = sessionData.split(":");
+                                    String loginTime = dataParts[1];
+                                    sendAuthenticatedResponse(sessionId, loginTime);
+                                } else {
+                                    sendLoginPage();
+                                    return;
                                 }
                             }
                         }
@@ -157,37 +164,14 @@ public class LoginEncoding {
             os.flush();
         }
 
-        private void sendAuthenticatedResponse(String sessionId) throws IOException {
+        private void sendAuthenticatedResponse(String sessionId, String loginTime) throws IOException {
             os.write("HTTP/1.1 200 OK\r\n".getBytes());
             os.write(("Set-Cookie: sessionId=" + sessionId + "; Path=/; HttpOnly\r\n").getBytes());
+            os.write(("Set-Cookie: loginTime=" + loginTime + "; Path=/; HttpOnly\r\n").getBytes());
             os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
             os.write("\r\n".getBytes());
+            serveFileContent("index.html");
             os.flush();
-        }
-
-        private boolean authenticate(String username, String password) {
-            return username.equals(USERNAME) && password.equals(PASSWORD);
-        }
-
-        private String createSession(String username, String loginTime) {
-            
-            String characters = "abcdefghijklmnopqrstuvwxyz0123456789";
-            StringBuilder sessionIdBuilder = new StringBuilder();
-            Random random = new Random();
-            for (int i = 0; i < 10; i++) {
-                sessionIdBuilder.append(characters.charAt(random.nextInt(characters.length())));
-            }
-            String sessionId = sessionIdBuilder.toString();
-
-            // Store session information
-            String sessionData = username + ":" + loginTime;
-            sessions.put(sessionId, sessionData);
-
-            return sessionId;
-        }
-
-        private boolean validateSession(String sessionId) {
-            return sessions.containsKey(sessionId);
         }
 
         private void serveFile(String folder, String fileName) {
@@ -207,6 +191,43 @@ public class LoginEncoding {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        private void serveFileContent(String fileName) {
+            try (BufferedReader fileReader = new BufferedReader(new FileReader(fileName))) {
+                String line;
+                while ((line = fileReader.readLine()) != null) {
+                    os.write(line.getBytes());
+                    os.write("\r\n".getBytes());
+                }
+            } catch (FileNotFoundException e) {
+                error();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private boolean authenticate(String username, String password) {
+            return username.equals(USERNAME) && password.equals(PASSWORD);
+        }
+
+        private String createSession(String username, String loginTime) {
+            String characters = "abcdefghijklmnopqrstuvwxyz0123456789";
+            StringBuilder sessionIdBuilder = new StringBuilder();
+            Random random = new Random();
+            for (int i = 0; i < 10; i++) {
+                sessionIdBuilder.append(characters.charAt(random.nextInt(characters.length())));
+            }
+            String sessionId = sessionIdBuilder.toString();
+
+            String sessionData = username + ":" + loginTime;
+            sessions.put(sessionId, sessionData);
+
+            return sessionId;
+        }
+
+        private boolean validateSession(String sessionId) {
+            return sessions.containsKey(sessionId);
         }
 
         private void error() {
