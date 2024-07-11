@@ -1,25 +1,22 @@
-/**
+/*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
+package newpackage;
 
 /**
  *
  * @author DELL
  */
-
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Base64;
-
-public class HttpServerAuthentication {
-
+public class ChatServerInWebPage {
     public static void main(String[] args) throws IOException {
         ServerSocket ss = null;
-        int port = 3079;
+        int port = 3066;
         System.err.println("Server is running on port: " + port);
         try {
             ss = new ServerSocket(port, 0, InetAddress.getByName("0.0.0.0"));
@@ -40,14 +37,18 @@ public class HttpServerAuthentication {
     }
 }
 
-class ClientHandler implements Runnable {
-    private static final String USERNAME = "user";
-    private static final String PASSWORD = "password";
+
+ class ClientHandler implements Runnable {
+    private static final String USERNAME1 = "user1";
+    private static final String PASSWORD1 = "password1";
+    private static final String USERNAME2 = "user2";
+    private static final String PASSWORD2 = "password2";
+    private boolean authenticated = false;
+   
 
     private BufferedReader br;
     private OutputStream os;
     private Socket soc;
-    private boolean authenticated = false;
 
     public ClientHandler(Socket soc) {
         this.soc = soc;
@@ -63,9 +64,9 @@ class ClientHandler implements Runnable {
     public void run() {
         try {
             String str;
+            String requestedFile = "logout.html";
             String host = null;
-            String requestedFile = "index.html";
-
+             
             while ((str = br.readLine()) != null) {
                 System.out.println(str);
                 if (str.startsWith("Host:")) {
@@ -76,21 +77,21 @@ class ClientHandler implements Runnable {
                     if (parts.length > 1) {
                         requestedFile = parts[1].substring(1);
                         if (requestedFile.isEmpty()) {
-                            requestedFile = "index.html";
+                            requestedFile = "logout.html";
                         }
                     }
                 }
                 if (str.startsWith("Authorization: Basic ")) {
-                    String base64Credentials = str.split(" ")[2];
+                    String base64Credentials = str.substring("Authorization: Basic ".length()).trim();
                     String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+
                     String[] userPass = credentials.split(":");
                     authenticated = authenticate(userPass[0], userPass[1]);
-                }
-                if (str.isEmpty()) {
+                
+                } if (str.isEmpty()) {
                     break;
                 }
             }
-
             if (!authenticated) {
                 sendAuthenticationRequired();
             } else {
@@ -109,18 +110,8 @@ class ClientHandler implements Runnable {
 
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (br != null) br.close();
-                if (os != null) os.close();
-                if (soc != null && !soc.isClosed()) soc.close();
-                System.err.println("Client connection closed!");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        } 
     }
-
     private void sendAuthenticationRequired() throws IOException {
         os.write("HTTP/1.1 401 Unauthorized\r\n".getBytes());
         os.write("WWW-Authenticate: Basic realm=\"Access to the site\"\r\n".getBytes());
@@ -129,12 +120,7 @@ class ClientHandler implements Runnable {
         os.write("<html><body><h1>401 Unauthorized</h1></body></html>".getBytes());
         os.flush();
     }
-
-    private boolean authenticate(String username, String password) {
-        return username.equals(USERNAME) && password.equals(PASSWORD);
-    }
-
-    private void serveFile(String folder, String fileName) {
+     private void serveFile(String folder, String fileName) {
         try (FileReader fileReader = new FileReader(folder + "/" + fileName)) {
             os.write("HTTP/1.1 200 OK\r\n".getBytes());
             os.write("Content-Type: text/html; charset=UTF-8\r\n".getBytes());
@@ -152,6 +138,13 @@ class ClientHandler implements Runnable {
             e.printStackTrace();
         }
     }
+    private boolean authenticate(String username, String password) {
+        return (username.equals(USERNAME1) && password.equals(PASSWORD1)) ||
+               (username.equals(USERNAME2) && password.equals(PASSWORD2));
+    }
+
+
+    
 
     private void error() {
         try {
@@ -162,7 +155,6 @@ class ClientHandler implements Runnable {
             os.flush();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } 
     }
-}
-
+ }

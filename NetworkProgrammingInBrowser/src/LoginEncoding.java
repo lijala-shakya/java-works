@@ -225,7 +225,10 @@ public class LoginEncoding {
 
             return sessionId;
         }
-
+//map<key=sessionid,value=newclass
+        //add logout only if loggedin 
+//        chatbok banaune 2 jana user ko login garera message ppathauna euta form halne message ani send button mathi 
+//        already sent messages ani username time ani send gareko message
         private boolean validateSession(String sessionId) {
             return sessions.containsKey(sessionId);
         }
@@ -243,3 +246,6 @@ public class LoginEncoding {
         }
     }
 }
+//map<key=sessionid,value=newclass>
+        //add logout only if loggedin 
+//        chatbox banaune 2 jana user ko login garera message ppathauna euta form halne message ani send button mathi already sent messages ani username time ani send gareko message
