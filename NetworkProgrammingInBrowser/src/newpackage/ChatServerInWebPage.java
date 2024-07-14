@@ -64,11 +64,11 @@ public class ChatServerInWebPage {
     public void run() {
         try {
             String str;
-            String requestedFile = "logout.html";
+            String requestedFile = "chat.html";
             String host = null;
              
             while ((str = br.readLine()) != null) {
-                System.out.println(str);
+//                System.out.println(str);
                 if (str.startsWith("Host:")) {
                     host = str.split(" ")[1];
                 }
@@ -77,7 +77,7 @@ public class ChatServerInWebPage {
                     if (parts.length > 1) {
                         requestedFile = parts[1].substring(1);
                         if (requestedFile.isEmpty()) {
-                            requestedFile = "logout.html";
+                            requestedFile = "chat.html";
                         }
                     }
                 }
@@ -96,12 +96,8 @@ public class ChatServerInWebPage {
                 sendAuthenticationRequired();
             } else {
                 if (host != null) {
-                    String folder = "";
-                    if (host.startsWith("127.0.0.1")) {
-                        folder = "127.0.0.1";
-                    } else if (host.startsWith("192.168.1.109")) {
-                        folder = "192.168.1.109";
-                    }
+                    String folder = "chat";
+                    
                     serveFile(folder, requestedFile);
                 } else {
                     error();

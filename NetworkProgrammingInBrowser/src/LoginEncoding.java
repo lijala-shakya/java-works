@@ -73,7 +73,7 @@ public class LoginEncoding {
                 String requestedFile = "index.html";
 
                 while ((str = br.readLine()) != null) {
-                    System.out.println(str);
+//                    System.out.println(str);
                     if (str.startsWith("Host:")) {
                         host = str.split(" ")[1];
                     }
