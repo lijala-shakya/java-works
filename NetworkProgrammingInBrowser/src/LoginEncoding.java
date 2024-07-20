@@ -22,7 +22,7 @@ import java.util.Random;
 
 public class LoginEncoding {
 
-    private static final Map<String, String> sessions = new HashMap<>();
+    private static final Map<String, SessionInfo> sessions = new HashMap<>();
     private static final String USERNAME = "user";
     private static final String PASSWORD = "password";
 
@@ -73,7 +73,7 @@ public class LoginEncoding {
                 String requestedFile = "index.html";
 
                 while ((str = br.readLine()) != null) {
-//                    System.out.println(str);
+                    System.out.println(str);
                     if (str.startsWith("Host:")) {
                         host = str.split(" ")[1];
                     }
@@ -109,10 +109,8 @@ public class LoginEncoding {
                                 sessionId = cookiePair[1].trim();
                                 authenticated = validateSession(sessionId);
                                 if (authenticated) {
-                                    String sessionData = sessions.get(sessionId);
-                                    String[] dataParts = sessionData.split(":");
-                                    String loginTime = dataParts[1];
-                                    sendAuthenticatedResponse(sessionId, loginTime);
+                                    SessionInfo sessionInfo = sessions.get(sessionId);
+                                    sendAuthenticatedResponse(sessionId, sessionInfo.getLoginTime());
                                 } else {
                                     sendLoginPage();
                                     return;
@@ -220,15 +218,12 @@ public class LoginEncoding {
             }
             String sessionId = sessionIdBuilder.toString();
 
-            String sessionData = username + ":" + loginTime;
-            sessions.put(sessionId, sessionData);
+            SessionInfo sessionInfo = new SessionInfo(username, loginTime);
+            sessions.put(sessionId, sessionInfo);
 
             return sessionId;
         }
-//map<key=sessionid,value=newclass
-        //add logout only if loggedin 
-//        chatbok banaune 2 jana user ko login garera message ppathauna euta form halne message ani send button mathi 
-//        already sent messages ani username time ani send gareko message
+
         private boolean validateSession(String sessionId) {
             return sessions.containsKey(sessionId);
         }
@@ -246,6 +241,10 @@ public class LoginEncoding {
         }
     }
 }
+
+
+
+
 //map<key=sessionid,value=newclass>
         //add logout only if loggedin 
 //        chatbox banaune 2 jana user ko login garera message ppathauna euta form halne message ani send button mathi already sent messages ani username time ani send gareko message

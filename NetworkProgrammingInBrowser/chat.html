@@ -1,78 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Chat</title>
     <style>
-        .logout-button {
-            background-color: red;
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            float: right; /* Adjusted to align logout button to the right */
+        #chat-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 300px;
+            height: 200px;
+            overflow-y: scroll;
         }
-
-        .logout-button:hover {
-            background-color: blue;
+        #chat-form {
+            margin-top: 10px;
         }
     </style>
-    <script>
-        async function loadChatHistory() {
-            try {
-                let response = await fetch('/chat-history');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch chat history');
-                }
-                let messages = await response.json();
-                let chatArea = document.getElementById('chatArea');
-                chatArea.innerHTML = '';
-                messages.forEach(msg => {
-                    let messageElement = document.createElement('div');
-                    messageElement.innerText = msg;
-                    chatArea.appendChild(messageElement);
-                });
-            } catch (error) {
-                console.error('Error loading chat history:', error);
-            }
-        }
-
-        async function sendMessage(event) {
-            event.preventDefault();
-            try {
-                let message = document.getElementById('message').value;
-                let response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: 'message=' + encodeURIComponent(message)
-                });
-                if (!response.ok) {
-                    throw new Error('Failed to send message');
-                }
-                loadChatHistory();
-                document.getElementById('message').value = '';
-            } catch (error) {
-                console.error('Error sending message:', error);
-            }
-        }
-
-        window.onload = function() {
-            loadChatHistory();
-        }
-    </script>
 </head>
 <body>
-    <h2>Chat</h2> 
-    <div id="chatArea" style="border: 1px solid #000; height: 300px; overflow-y: scroll;"></div>
-    <form onsubmit="sendMessage(event)">
-        <input type="text" id="message" required>
-        <input type="submit" value="Send">
-        <button class="logout-button"><a href="/login.html" style="color: white; text-decoration: none;">Logout</a></button>
+    <div id="chat-box">
+        <!-- Chat messages will be displayed here -->
+    </div>
+    <form id="chat-form" method="POST" action="/send-message">
+        <input type="text" name="message" required>
+        <button type="submit">Send</button>
     </form>
+    <form method="GET" action="/logout">
+        <button type="submit">Logout</button>
+    </form>
+    <script>
+        document.getElementById('chat-form').onsubmit = async function(event) {
+            event.preventDefault();
+            const message = event.target.message.value;
+            const response = await fetch('/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'message=' + encodeURIComponent(message)
+            });
+            if (response.ok) {
+                const chatBox = document.getElementById('chat-box');
+                const currentDate = new Date();
+                const formattedDate = currentDate.getFullYear() + '-' +
+                                      (currentDate.getMonth() + 1).toString().padStart(2, '0') + '-' +
+                                      currentDate.getDate().toString().padStart(2, '0') + ' ' +
+                                      currentDate.getHours().toString().padStart(2, '0') + ':' +
+                                      currentDate.getMinutes().toString().padStart(2, '0') + ':' +
+                                      currentDate.getSeconds().toString().padStart(2, '0');
+                chatBox.innerHTML += '<div>' + formattedDate + ' - ' + message + '</div>';
+                chatBox.scrollTop = chatBox.scrollHeight;
+                event.target.message.value = '';
+            } else {
+                alert('Failed to send message');
+            }
+        };
+    </script>
 </body>
 </html>
